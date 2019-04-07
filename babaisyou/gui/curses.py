@@ -1,8 +1,9 @@
 from . import Gui
 import curses
 from curses import KEY_RIGHT, KEY_LEFT, KEY_UP, KEY_DOWN
+import asyncio
+from app import Baba, Flag
 import logging
-
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +12,7 @@ class Curses(Gui):
     """TerminalGui is a Gui """
 
     BABA = "Y"
+    FLAG = "F"
 
     def __init__(self, game_map):
         """ 
@@ -18,23 +20,30 @@ class Curses(Gui):
         """
         self.game_map = game_map
         self.actions = {}
-        self._worker = None
+        self.gui_loop = None
+        self.loop = asyncio.get_event_loop()
+        self.over = False
 
-    def start(self):
+    async def start(self):
         """ Start GUI and event loop """
         curses.initscr()
         curses.noecho()
         curses.curs_set(0)
-        curses.wrapper(self._event_loop)
+        self.gui_loop = asyncio.ensure_future(
+            self.loop.run_in_executor(None,
+                                      lambda: curses.wrapper(self._event_loop))
+        )
 
-    def _event_loop(self, stdscr):
+    def _event_loop(self, std):
         """ Gui event loop """
-        self.win = curses.newwin(1+self.game_map.width+1, 1+self.game_map.height+1, 0, 0)
+        self.win = curses.newwin(1+self.game_map.width+1,
+                                 1+self.game_map.height+1,
+                                 0, 0)
         self.win.keypad(1)
         self.win.border(0)
         self.win.nodelay(1)
         self.update()
-        while True:
+        while not self.over:
             self.win.border(0)
             self.win.addstr(0, 2, 'BABAISYOU')
             self.win.timeout(1)
@@ -47,7 +56,6 @@ class Curses(Gui):
             try:
                 action = self.actions[key]
             except KeyError:
-                print(f"no action for key : {key}")
                 logger.info(f"no action for key : {key}")
                 continue
 
@@ -60,8 +68,10 @@ class Curses(Gui):
             for x, el in enumerate(col):
                 if el is None:
                     self.win.addch(x+1, y+1, ' ')
-                else:
+                elif isinstance(el, Baba):
                     self.win.addch(x+1, y+1, self.BABA)
+                elif isinstance(el, Flag):
+                    self.win.addch(x+1, y+1, self.FLAG)
 
     def register_actions(self, quit, up, down, left, right):
         """ Callback when user did an action """
@@ -75,6 +85,17 @@ class Curses(Gui):
 
     def close(self):
         """ Clean """
+        self.over = True
+        if self.gui_loop is not None and not self.gui_loop.cancelled():
+            self.gui_loop.cancel()
         curses.echo()
         curses.nocbreak()
         curses.endwin()
+        logger.debug("Gui closed")
+
+    async def wait_closed(self):
+        """ Wait until gui loop is over """
+        try:
+            await self.gui_loop
+        except asyncio.CancelledError:
+            pass

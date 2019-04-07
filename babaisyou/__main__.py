@@ -5,7 +5,7 @@ import logging
 
 async def run():
     app = await App.create()
-    app.start()
+    await app.start()
     await app.wait_closed()
 
 
