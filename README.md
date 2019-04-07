@@ -1,5 +1,10 @@
 # BABA IS YOU :)
 
+**Watch logs while playing :**
+```
+watch -n 1 tail app.log
+```
+
 **Standard prefixes to start a commit message**
 ```
 BLD: change related to building

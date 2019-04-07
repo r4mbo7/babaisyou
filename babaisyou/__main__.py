@@ -1,21 +1,23 @@
 import asyncio
-import sys
 from app import App
+import sys
+import logging
 
 async def run():
     app = await App.create()
     app.start()
-    return 0
+    await app.wait_closed()
 
 
 def main():
+    logging.basicConfig(filename='app.log',level=logging.DEBUG)
+    logging.info('Game on !')
     loop = asyncio.get_event_loop()
     try:
-        return loop.run_until_complete(run())
-    except Exception as exc:
-        raise exc
+        loop.run_until_complete(run())
     finally:
         loop.close()
+        logging.info('game over')
 
 
 if __name__ == '__main__':
