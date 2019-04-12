@@ -54,7 +54,7 @@ class App:
         """
         game_map = GameMap()
         items = [
-            Baba(1, 1),
+            Baba(1, 1, you=True),
             Wall(1, 2),
             Flag(3, 3),
             # rules
@@ -96,14 +96,17 @@ class App:
                 item2 = self.game_map.maps[i2x][i2y]
                 if self.are_rules(item1, item2):
                     rules.append((item1, item2))
+        logger.debug(f"rules {[(r1.__class__.__name__, 'is', r2.__class__.__name__) for r1, r2 in rules]}")
         # set rules
         for item in self.items:
-            # reset actions
-            item.actions = []
-            # set action accoring to the rules
-            for i1r, i2r in rules:
-                if isinstance(item, i1r.__class__) or isinstance(item, i2r.__class__):
-                    item.actions.extend([i1r.ref_action, i2r.ref_action])
+            if not item.rule:
+                item_rules = []
+                for r1, r2 in rules:
+                    if isinstance(item, r2.__class__):
+                        item_rules.append(r1)
+                    if isinstance(item, r1.__class__):
+                        item_rules.append(r2)
+                item.set_rules(item_rules)
 
     def do_move(self, move):
         """ apply move and rules """
@@ -112,15 +115,20 @@ class App:
             item = self.game_map.maps[d_x][d_y]
             if item is None:
                 # simple move
+                logger.debug("move")
                 you.posx = d_x
                 you.posy = d_y
             else:
+                logger.debug(f"collisition with {item.__class__}")
                 is_win |= any([action(self.game_map).apply(you, item)
                                for action in item.actions])
         self.game_map.set_items(self.items)
         if is_win:
             logger.info("You win !")
             self.quit()
+        else:
+            # re-set rules
+            self.read_rules()
 
     def quit(self):
         """ Quit the game """
@@ -129,27 +137,27 @@ class App:
 
     def move_up(self):
         """ The user want to move """
-        logger.debug("move_up")
-        self.do_move([(baba, baba.posx, (baba.posy-1) % self.game_map.height)
-                      for baba in self.game_map.get_items(Baba)])
+        self.do_move([(item, item.posx, (item.posy-1) % self.game_map.height)
+                      for item in self.game_map.get_items(Item)
+                      if item.you])
 
     def move_down(self):
         """ The user want to move """
-        logger.debug("move_down")
-        self.do_move([(baba, baba.posx, (baba.posy+1) % self.game_map.height)
-                      for baba in self.game_map.get_items(Baba)])
+        self.do_move([(item, item.posx, (item.posy+1) % self.game_map.height)
+                      for item in self.game_map.get_items(Baba)
+                      if item.you])
 
     def move_left(self):
         """ The user want to move """
-        logger.debug("move_left")
-        self.do_move([(baba, (baba.posx-1) % self.game_map.width, baba.posy)
-                      for baba in self.game_map.get_items(Baba)])
+        self.do_move([(item, (item.posx-1) % self.game_map.width, item.posy)
+                      for item in self.game_map.get_items(Baba)
+                      if item.you])
 
     def move_right(self):
         """ The user want to move """
-        logger.debug("move_right")
-        self.do_move([(baba, (baba.posx+1) % self.game_map.width, baba.posy)
-                      for baba in self.game_map.get_items(Baba)])
+        self.do_move([(item, (item.posx+1) % self.game_map.width, item.posy)
+                      for item in self.game_map.get_items(Baba)
+                      if item.you])
 
     async def start(self):
         """ Start the App """
