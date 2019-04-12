@@ -14,6 +14,7 @@ class App:
 
     def __init__(self):
         self.game_map = GameMap.create(self.MAP)
+        self.read_rules()
         self.gui = Curses(self)
         self.gui.register_actions(self.quit,
                              self.move_up,
@@ -88,6 +89,7 @@ class App:
         """ The user want to retry """
         logger.info("retry")
         self.game_map = GameMap.create(self.MAP)
+        self.read_rules()
 
     def move_up(self):
         """ The user want to move """
@@ -98,19 +100,19 @@ class App:
     def move_down(self):
         """ The user want to move """
         self.do_move([(item, item.posx, (item.posy+1) % self.game_map.height)
-                      for item in self.game_map.get_items(Baba)
+                      for item in self.game_map.get_items(Item)
                       if item.you])
 
     def move_left(self):
         """ The user want to move """
         self.do_move([(item, (item.posx-1) % self.game_map.width, item.posy)
-                      for item in self.game_map.get_items(Baba)
+                      for item in self.game_map.get_items(Item)
                       if item.you])
 
     def move_right(self):
         """ The user want to move """
         self.do_move([(item, (item.posx+1) % self.game_map.width, item.posy)
-                      for item in self.game_map.get_items(Baba)
+                      for item in self.game_map.get_items(Item)
                       if item.you])
 
     async def start(self):
