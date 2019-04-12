@@ -9,11 +9,17 @@ logger = logging.getLogger(__name__)
 
 colors = {
     "white": (0, curses.COLOR_WHITE, curses.COLOR_BLACK),
-    "red": (1, curses.COLOR_RED, curses.COLOR_BLACK),
-    "blue": (2, curses.COLOR_BLUE, curses.COLOR_BLACK),
-    "green": (3, curses.COLOR_GREEN, curses.COLOR_BLACK),
-    "yellow": (4, curses.COLOR_YELLOW, curses.COLOR_BLACK),
-    "pink": (5, curses.COLOR_RED, curses.COLOR_WHITE),
+    "white2": (1, curses.COLOR_BLACK, curses.COLOR_WHITE),
+    "red": (2, curses.COLOR_RED, curses.COLOR_BLACK),
+    "red2": (3, curses.COLOR_RED, curses.COLOR_WHITE),
+    "blue": (4, curses.COLOR_BLUE, curses.COLOR_BLACK),
+    "blue2": (5, curses.COLOR_BLUE, curses.COLOR_WHITE),
+    "green": (6, curses.COLOR_GREEN, curses.COLOR_BLACK),
+    "green2": (7, curses.COLOR_GREEN, curses.COLOR_WHITE),
+    "yellow": (8, curses.COLOR_YELLOW, curses.COLOR_BLACK),
+    "yellow2": (9, curses.COLOR_YELLOW, curses.COLOR_WHITE),
+    "pink": (10, curses.COLOR_RED, curses.COLOR_BLACK),
+    "pink2": (11, curses.COLOR_RED, curses.COLOR_WHITE),
 }
 
 items_repr = {
@@ -95,7 +101,7 @@ class Curses(Gui):
             line += 1
             self.winrules.addstr(line % 10, 1,
                                  f"{rep['letter']} : {item.__name__}",
-                                 self.color[rep["color"]])
+                                 self.color[rep["color"]+"2"])
         self.winrules.refresh()
 
         self.win = curses.newwin(1+self.game_map.width+1,
@@ -133,9 +139,12 @@ class Curses(Gui):
                 except KeyError:
                     self.win.addch(x+1, y+1, ' ')
                 else:
+                    color = el_repr["color"]
+                    if el.rule:
+                        color += "2"
                     self.win.addstr(x+1, y+1,
                                     el_repr["letter"],
-                                    self.color[el_repr["color"]])
+                                    self.color[color])
 
     def register_actions(self, quit, up, down, left, right):
         """ Callback when user did an action """
