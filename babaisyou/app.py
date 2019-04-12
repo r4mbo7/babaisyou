@@ -13,11 +13,11 @@ class GameMap:
 
     @property
     def height(self):
-        return len(self.maps)
+        return len(self.maps[0])
 
     @property
     def width(self):
-        return len(self.maps[0])
+        return len(self.maps)
 
     def get_entities(self, cls):
         """ List of entities with their position """
