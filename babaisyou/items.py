@@ -2,6 +2,7 @@
 from actions import Action
 import logging
 
+
 class Item:
     """ Item of the game """
 
@@ -14,16 +15,23 @@ class Item:
             self.actions = [Action.load("Push")]
         self.you = you  # item is you
 
-    def set_rules(self, rules):
+    def set_rules(self, rules, game_map):
         # reset actions
         logging.debug(f"set rule : {[rule.__class__.__name__ for rule in rules]} on {self.__class__.__name__}")
         self.actions = []
         self.you = False
-        for rule in rules:
-            if isinstance(rule, You):
+        for item in rules:
+            if isinstance(item, You):
                 self.you = True
+            elif hasattr(item, "ref_action"):
+                # item is rule with action
+                self.actions.append(item.ref_action)
             else:
-                self.actions.append(rule.ref_action)
+                # item is item
+                self.you = any([isinstance(you, item.__class__)
+                                for you in game_map.get_items(Item)
+                                if you.you])
+        return self
 
 
 class Baba(Item):
@@ -44,16 +52,19 @@ class Is(Item):
         self.actions = [Action.load("Push")]
 
 
+class You(Item):
+    def __init__(self, *agrs, **kwargs):
+        super().__init__(*agrs, **kwargs)
+        self.rule = True
+        self.actions = [Action.load("Push")]
+
+
 class Rule(Item):
     def __init__(self, *agrs, **kwargs):
         super().__init__(*agrs, **kwargs)
         self.actions = [Action.load("Push")]
         self.rule = True
         self.ref_action = Action
-
-
-class You(Rule):
-    pass
 
 
 class Win(Rule):

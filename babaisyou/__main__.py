@@ -1,24 +1,30 @@
-import asyncio
 from app import App
+import argparse
+import asyncio
 from functools import partial
 import signal
 import sys
 import logging
 
 
-async def run():
-    app = App()
+async def run(env):
+    app = App(env["maps"])
     await app.start()
     return app
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-m', '--maps', help='Map name', default="maps/default.txt")
+    args = parser.parse_args()
+    env = vars(args)
+
     logging.basicConfig(filename='app.log', level=logging.DEBUG)
     logging.info('Game on !')
 
     loop = asyncio.get_event_loop()
 
-    app = loop.run_until_complete(run())
+    app = loop.run_until_complete(run(env))
 
     def shutdown(sig):
         logging.info('received signal %s, shutting down', sig)

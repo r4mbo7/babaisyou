@@ -10,18 +10,17 @@ logger = logging.getLogger(__name__)
 class App:
     """ App contain rules and handle GUI """
 
-    MAP = "maps/default.txt"
-
-    def __init__(self):
-        self.game_map = GameMap.create(self.MAP)
+    def __init__(self, map_name="maps/default.txt"):
+        self.map_name = map_name
+        self.game_map = GameMap.create(map_name)
         self.read_rules()
         self.gui = Curses(self)
         self.gui.register_actions(self.quit,
-                             self.move_up,
-                             self.move_down,
-                             self.move_left,
-                             self.move_right,
-                             self.retry)
+                                  self.move_up,
+                                  self.move_down,
+                                  self.move_left,
+                                  self.move_right,
+                                  self.retry)
         self._close_future = asyncio.Future()
 
     @property
@@ -48,15 +47,20 @@ class App:
                     rules.append((item1, item2))
         logger.debug(f"rules {[(r1.__class__.__name__, 'is', r2.__class__.__name__) for r1, r2 in rules]}")
         # set rules
+        new_items = []
         for item in self.items:
-            if not item.rule:
+            if item.rule:
+                new_items.append(item)
+            else:
                 item_rules = []
                 for r1, r2 in rules:
                     if isinstance(item, r2.__class__):
                         item_rules.append(r1)
                     if isinstance(item, r1.__class__):
                         item_rules.append(r2)
-                item.set_rules(item_rules)
+                new_items.append(item.set_rules(item_rules, self.game_map))
+
+        self.game_map.set_items(new_items)
 
     def do_move(self, move):
         """ apply move and rules """
@@ -88,29 +92,33 @@ class App:
     def retry(self):
         """ The user want to retry """
         logger.info("retry")
-        self.game_map = GameMap.create(self.MAP)
+        self.game_map = GameMap.create(self.map_name)
         self.read_rules()
 
     def move_up(self):
         """ The user want to move """
+        logger.debug("move_up")
         self.do_move([(item, item.posx, (item.posy-1) % self.game_map.height)
                       for item in self.game_map.get_items(Item)
                       if item.you])
 
     def move_down(self):
         """ The user want to move """
+        logger.debug("move_down")
         self.do_move([(item, item.posx, (item.posy+1) % self.game_map.height)
                       for item in self.game_map.get_items(Item)
                       if item.you])
 
     def move_left(self):
         """ The user want to move """
+        logger.debug("move_left")
         self.do_move([(item, (item.posx-1) % self.game_map.width, item.posy)
                       for item in self.game_map.get_items(Item)
                       if item.you])
 
     def move_right(self):
         """ The user want to move """
+        logger.debug("move_right")
         self.do_move([(item, (item.posx+1) % self.game_map.width, item.posy)
                       for item in self.game_map.get_items(Item)
                       if item.you])
