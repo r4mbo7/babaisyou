@@ -2,39 +2,9 @@ import asyncio
 import logging
 from gui.curses import Curses
 from items import *
+from maps import GameMap
 
 logger = logging.getLogger(__name__)
-
-
-class GameMap:
-    """ GameMap is a matrice """
-
-    def __init__(self, width=24, height=24):
-        self.width = width
-        self.height = height
-        self.maps = self.empty_map
-
-    @property
-    def empty_map(self):
-        return [[None for _ in range(self.width)] for _ in range(self.height)]
-
-    def set_items(self, items):
-        """ Update map with given items """
-        self.maps = self.empty_map
-        for item in items:
-            self.maps[item.posx][item.posy] = item
-
-    def get_items(self, cls):
-        """ List of items on map """
-        return [item
-                for x, col in enumerate(self.maps)
-                for y, item in enumerate(col)
-                if isinstance(item, cls)]
-
-    def debug(self):
-        import pprint
-        maps = pprint.pformat(self.maps, width=160)
-        logger.debug(maps)
 
 
 class App:
@@ -52,23 +22,8 @@ class App:
 
         :returns: App
         """
-        game_map = GameMap()
-        items = [
-            Baba(1, 1, you=True),
-            Wall(1, 2),
-            Flag(3, 3),
-            # rules
-            Baba(0, 0, rule=True),
-            Is(1, 0, rule=True),
-            You(2, 0, rule=True),
-            Wall(5, 0, rule=True),
-            Is(6, 0, rule=True),
-            Push(7, 0, rule=True),
-            Flag(9, 10, rule=True),
-            Is(10, 10, rule=True),
-            Win(11, 10, rule=True),
-        ]
-        game_map.set_items(items)
+        game_map = GameMap.create("maps/default.txt")
+        items = game_map.get_items()
         gui = Curses(game_map)
         app = cls(gui, items, game_map)
         gui.register_actions(app.quit,

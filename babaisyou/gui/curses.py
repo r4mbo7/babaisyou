@@ -104,8 +104,8 @@ class Curses(Gui):
                                  self.color[rep["color"]+"2"])
         self.winrules.refresh()
 
-        self.win = curses.newwin(1+self.game_map.width+1,
-                                 1+self.game_map.height+1,
+        self.win = curses.newwin(1+self.game_map.height+1,
+                                 1+self.game_map.width+1,
                                  0, 0)
         self.win.keypad(1)
         self.win.border(0)
