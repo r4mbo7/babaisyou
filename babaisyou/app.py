@@ -10,28 +10,22 @@ logger = logging.getLogger(__name__)
 class App:
     """ App contain rules and handle GUI """
 
-    def __init__(self, gui, items, game_map):
-        self.gui = gui
-        self.items = items
-        self.game_map = game_map
+    MAP = "maps/default.txt"
+
+    def __init__(self):
+        self.game_map = GameMap.create(self.MAP)
+        self.gui = Curses(self)
+        self.gui.register_actions(self.quit,
+                             self.move_up,
+                             self.move_down,
+                             self.move_left,
+                             self.move_right,
+                             self.retry)
         self._close_future = asyncio.Future()
 
-    @classmethod
-    async def create(cls, settings=None):
-        """ do the setup to create an app and it's required objects
-
-        :returns: App
-        """
-        game_map = GameMap.create("maps/default.txt")
-        items = game_map.get_items()
-        gui = Curses(game_map)
-        app = cls(gui, items, game_map)
-        gui.register_actions(app.quit,
-                             app.move_up,
-                             app.move_down,
-                             app.move_left,
-                             app.move_right)
-        return app
+    @property
+    def items(self):
+        return self.game_map.get_items()
 
     @staticmethod
     def are_rules(item1, item2):
@@ -87,8 +81,13 @@ class App:
 
     def quit(self):
         """ Quit the game """
-        logger.debug("quit")
+        logger.info("quit")
         self.close()
+
+    def retry(self):
+        """ The user want to retry """
+        logger.info("retry")
+        self.game_map = GameMap.create(self.MAP)
 
     def move_up(self):
         """ The user want to move """

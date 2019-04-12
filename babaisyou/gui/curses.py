@@ -57,16 +57,20 @@ items_repr = {
 class Curses(Gui):
     """TerminalGui is a Gui """
 
-    def __init__(self, game_map):
+    def __init__(self, app):
         """ 
-        :param GameMap game_map: The actual GameMap instance to display
+        :param GameMap app: The actual GameMap instance to display
         """
-        self.game_map = game_map
+        self._app = app
         self.color = {}
         self.actions = {}
         self.gui_loop = None
         self.loop = asyncio.get_event_loop()
         self.over = False
+
+    @property
+    def game_map(self):
+        return self._app.game_map
 
     def _curses_init(self):
         """ initialise curese stuff """
@@ -94,8 +98,11 @@ class Curses(Gui):
 
     def _event_loop(self, stdscr):
         """ Gui event loop """
-        self.winrules = curses.newwin(10, 30, 0, 1+self.game_map.width+1)
-        self.winrules.addstr(0, 0, "Good luck :)")
+        self.moves = curses.newwin(10, 30, 0, 0)
+        self.moves.addstr(0, 1, " ← ↑ ↓ → r esc ")
+        self.moves.refresh()
+        self.winrules = curses.newwin(10, 30, 1, 1+self.game_map.width+1)
+        self.winrules.addstr(1, 0, "Good luck :)")
         line = 1
         for item, rep in items_repr.items():
             line += 1
@@ -106,14 +113,13 @@ class Curses(Gui):
 
         self.win = curses.newwin(1+self.game_map.height+1,
                                  1+self.game_map.width+1,
-                                 0, 0)
+                                 1, 0)
         self.win.keypad(1)
         self.win.border(0)
         self.win.nodelay(1)
         self.update()
         while not self.over:
             self.win.border(0)
-            self.win.addstr(0, 2, 'BABAISYOU!', self.color["white"])
             self.win.timeout(1)
 
             event = self.win.getch()
@@ -146,7 +152,7 @@ class Curses(Gui):
                                     el_repr["letter"],
                                     self.color[color])
 
-    def register_actions(self, quit, up, down, left, right):
+    def register_actions(self, quit, up, down, left, right, retry):
         """ Callback when user did an action """
         self.actions = {
             27: quit,
@@ -154,6 +160,7 @@ class Curses(Gui):
             KEY_DOWN: down,
             KEY_LEFT: left,
             KEY_RIGHT: right,
+            114: retry,
         }
 
     def close(self):

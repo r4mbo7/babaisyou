@@ -7,7 +7,7 @@ import logging
 
 
 async def run():
-    app = await App.create()
+    app = App()
     await app.start()
     return app
 
