@@ -1,6 +1,6 @@
 import asyncio
 import logging
-
+from items import *
 
 logger = logging.getLogger(__name__)
 
@@ -30,14 +30,6 @@ class GameMap:
         import pprint
         maps = pprint.pformat(self.maps, width=160)
         logger.debug(maps)
-
-
-class Baba:
-    pass
-
-
-class Flag:
-    pass
 
 
 class App:

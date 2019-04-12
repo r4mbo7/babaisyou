@@ -2,25 +2,43 @@ from . import Gui
 import curses
 from curses import KEY_RIGHT, KEY_LEFT, KEY_UP, KEY_DOWN
 import asyncio
-from app import Baba, Flag
+from items import *
 import logging
 
 logger = logging.getLogger(__name__)
 
+colors = {
+    "white": (0, curses.COLOR_WHITE, curses.COLOR_BLACK),
+    "red": (1, curses.COLOR_RED, curses.COLOR_BLACK),
+    "blue": (2, curses.COLOR_BLUE, curses.COLOR_BLACK),
+    "green": (3, curses.COLOR_GREEN, curses.COLOR_BLACK),
+    "yellow": (4, curses.COLOR_YELLOW, curses.COLOR_BLACK),
+}
+
+items_repr = {
+    Baba : {
+        "letter": "Y",
+        "color": "white"
+    },
+    Flag : {
+        "letter": "F",
+        "color": "yellow"
+    },
+    Wall : {
+        "letter": "W",
+        "color": "blue"
+    }
+}
 
 class Curses(Gui):
     """TerminalGui is a Gui """
-
-    YOU = "Y"
-    YOU_COLOR = 0
-    FLAG = "F"
-    FLAG_COLOR = 4
 
     def __init__(self, game_map):
         """ 
         :param GameMap game_map: The actual GameMap instance to display
         """
         self.game_map = game_map
+        self.color = {}
         self.actions = {}
         self.gui_loop = None
         self.loop = asyncio.get_event_loop()
@@ -31,17 +49,12 @@ class Curses(Gui):
         curses.initscr()
         curses.noecho()
         curses.curs_set(0)
+        # Initialise colors
         curses.start_color()
         curses.use_default_colors()
-        curses.init_pair(0, curses.COLOR_WHITE, curses.COLOR_BLACK)
-        curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
-        curses.init_pair(2, curses.COLOR_BLUE, curses.COLOR_BLACK)
-        curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK)
-        curses.init_pair(4, curses.COLOR_YELLOW, curses.COLOR_BLACK)
-        curses.init_pair(5, curses.COLOR_RED, curses.COLOR_WHITE)
-        curses.init_pair(6, curses.COLOR_BLUE, curses.COLOR_WHITE)
-        curses.init_pair(7, curses.COLOR_GREEN, curses.COLOR_WHITE)
-        curses.init_pair(8, curses.COLOR_YELLOW, curses.COLOR_WHITE)
+        for name, color in colors.items():
+            curses.init_pair(*color)
+            self.color[name] = curses.color_pair(color[0])
         if curses.can_change_color():
             logger.debug("terminal can change color")
         else:
@@ -58,10 +71,9 @@ class Curses(Gui):
     def _event_loop(self, stdscr):
         """ Gui event loop """
         self.winrules = curses.newwin(10, 30, 0, 1+self.game_map.width+1)
-        self.winrules.bkgd(' ', curses.color_pair(0))
         self.winrules.addstr(0, 0, "RULES")
-        self.winrules.addstr(2, 1, "Y : You", curses.color_pair(0))
-        self.winrules.addstr(3, 1, "F : Flag", curses.color_pair(4))
+        self.winrules.addstr(2, 1, "Y : You", self.color["white"])
+        self.winrules.addstr(3, 1, "F : Flag", self.color["yellow"])
         self.winrules.refresh()
 
         self.win = curses.newwin(1+self.game_map.width+1,
@@ -73,7 +85,7 @@ class Curses(Gui):
         self.update()
         while not self.over:
             self.win.border(0)
-            self.win.addstr(0, 2, 'BABAISYOU!', curses.color_pair(2))
+            self.win.addstr(0, 2, 'BABAISYOU!', self.color["white"])
             self.win.timeout(1)
 
             event = self.win.getch()
@@ -94,12 +106,14 @@ class Curses(Gui):
         """ Refresh screen """
         for y, col in enumerate(self.game_map.maps):
             for x, el in enumerate(col):
-                if el is None:
+                try:
+                    el_repr = items_repr[el.__class__]
+                except KeyError:
                     self.win.addch(x+1, y+1, ' ')
-                elif isinstance(el, Baba):
-                    self.win.addch(x+1, y+1, self.YOU, curses.color_pair(self.YOU_COLOR))
-                elif isinstance(el, Flag):
-                    self.win.addch(x+1, y+1, self.FLAG, curses.color_pair(self.FLAG_COLOR))
+                else:
+                    self.win.addstr(x+1, y+1,
+                        el_repr["letter"],
+                        self.color[el_repr["color"]])
 
     def register_actions(self, quit, up, down, left, right):
         """ Callback when user did an action """
