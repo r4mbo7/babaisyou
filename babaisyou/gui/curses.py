@@ -13,12 +13,29 @@ colors = {
     "blue": (2, curses.COLOR_BLUE, curses.COLOR_BLACK),
     "green": (3, curses.COLOR_GREEN, curses.COLOR_BLACK),
     "yellow": (4, curses.COLOR_YELLOW, curses.COLOR_BLACK),
+    "pink": (5, curses.COLOR_RED, curses.COLOR_WHITE),
 }
 
 items_repr = {
-    Baba: {
+    You: {
         "letter": "Y",
         "color": "white"
+    },
+    Is: {
+        "letter": "I",
+        "color": "red"
+    },
+    Push: {
+        "letter": "P",
+        "color": "blue"
+    },
+    Win: {
+        "letter": "W",
+        "color": "yellow"
+    },
+    Baba: {
+        "letter": "B",
+        "color": "pink"
     },
     Flag: {
         "letter": "F",
@@ -72,7 +89,7 @@ class Curses(Gui):
     def _event_loop(self, stdscr):
         """ Gui event loop """
         self.winrules = curses.newwin(10, 30, 0, 1+self.game_map.width+1)
-        self.winrules.addstr(0, 0, "RULES")
+        self.winrules.addstr(0, 0, "Good luck :)")
         line = 1
         for item, rep in items_repr.items():
             line += 1

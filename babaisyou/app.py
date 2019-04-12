@@ -56,7 +56,17 @@ class App:
         items = [
             Baba(1, 1),
             Wall(1, 2),
-            Flag(3, 3)
+            Flag(3, 3),
+            # rules
+            Baba(0, 0, rule=True),
+            Is(1, 0, rule=True),
+            You(2, 0, rule=True),
+            Wall(5, 0, rule=True),
+            Is(6, 0, rule=True),
+            Push(7, 0, rule=True),
+            Flag(9, 10, rule=True),
+            Is(10, 10, rule=True),
+            Win(11, 10, rule=True),
         ]
         game_map.set_items(items)
         gui = Curses(game_map)
@@ -68,23 +78,45 @@ class App:
                              app.move_right)
         return app
 
+    @staticmethod
+    def are_rules(item1, item2):
+        if item1 is None or item2 is None:
+            return False
+        return item1.rule and item2.rule
+
+    def read_rules(self):
+        rules = []
+        for rule in self.game_map.get_items(Is):
+            adjacent = [((rule.posx-1) % self.game_map.width, rule.posy,
+                         (rule.posx+1) % self.game_map.width, rule.posy),
+                        ((rule.posx, (rule.posy-1) % self.game_map.height,
+                          rule.posx, (rule.posy+1) % self.game_map.height))]
+            for i1x, i1y, i2x, i2y in adjacent:
+                item1 = self.game_map.maps[i1x][i1y]
+                item2 = self.game_map.maps[i2x][i2y]
+                if self.are_rules(item1, item2):
+                    rules.append((item1, item2))
+        # set rules
+        for item in self.items:
+            # reset actions
+            item.actions = []
+            # set action accoring to the rules
+            for i1r, i2r in rules:
+                if isinstance(item, i1r.__class__) or isinstance(item, i2r.__class__):
+                    item.actions.extend([i1r.ref_action, i2r.ref_action])
+
     def do_move(self, move):
         """ apply move and rules """
         is_win = False
         for you, d_x, d_y in move:
-            entity = self.game_map.maps[d_x][d_y]
-            if entity is None:
-                # all move
+            item = self.game_map.maps[d_x][d_y]
+            if item is None:
+                # simple move
                 you.posx = d_x
                 you.posy = d_y
-            elif isinstance(entity, Flag):
-                # move and win
-                you.posx = d_x
-                you.posy = d_y
-                is_win = True
-            elif isinstance(entity, Wall):
-                # do not move
-                pass
+            else:
+                is_win |= any([action(self.game_map).apply(you, item)
+                               for action in item.actions])
         self.game_map.set_items(self.items)
         if is_win:
             logger.info("You win !")
