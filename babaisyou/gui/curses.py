@@ -16,19 +16,20 @@ colors = {
 }
 
 items_repr = {
-    Baba : {
+    Baba: {
         "letter": "Y",
         "color": "white"
     },
-    Flag : {
+    Flag: {
         "letter": "F",
         "color": "yellow"
     },
-    Wall : {
+    Wall: {
         "letter": "W",
         "color": "blue"
     }
 }
+
 
 class Curses(Gui):
     """TerminalGui is a Gui """
@@ -72,8 +73,12 @@ class Curses(Gui):
         """ Gui event loop """
         self.winrules = curses.newwin(10, 30, 0, 1+self.game_map.width+1)
         self.winrules.addstr(0, 0, "RULES")
-        self.winrules.addstr(2, 1, "Y : You", self.color["white"])
-        self.winrules.addstr(3, 1, "F : Flag", self.color["yellow"])
+        line = 1
+        for item, rep in items_repr.items():
+            line += 1
+            self.winrules.addstr(line % 10, 1,
+                                 f"{rep['letter']} : {item.__name__}",
+                                 self.color[rep["color"]])
         self.winrules.refresh()
 
         self.win = curses.newwin(1+self.game_map.width+1,
@@ -112,8 +117,8 @@ class Curses(Gui):
                     self.win.addch(x+1, y+1, ' ')
                 else:
                     self.win.addstr(x+1, y+1,
-                        el_repr["letter"],
-                        self.color[el_repr["color"]])
+                                    el_repr["letter"],
+                                    self.color[el_repr["color"]])
 
     def register_actions(self, quit, up, down, left, right):
         """ Callback when user did an action """
