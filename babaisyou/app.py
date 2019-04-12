@@ -1,5 +1,4 @@
 import asyncio
-from gui.curses import Curses
 import logging
 
 
@@ -14,18 +13,18 @@ class GameMap:
 
     @property
     def height(self):
-        return len(self.maps)
-
-    @property
-    def width(self):
         return len(self.maps[0])
 
     @property
-    def babas(self):
+    def width(self):
+        return len(self.maps)
+
+    def get_entities(self, cls):
+        """ List of entities with their position """
         return [(el, x, y)
                 for x, col in enumerate(self.maps)
                 for y, el in enumerate(col)
-                if isinstance(el, Baba)]
+                if isinstance(el, cls)]
 
     def debug(self):
         import pprint
@@ -33,11 +32,12 @@ class GameMap:
         logger.debug(maps)
 
 
-class Baba(object):
-    """ A Baba"""
+class Baba:
+    pass
 
-    def __init__(self):
-        pass
+
+class Flag:
+    pass
 
 
 class App:
@@ -46,7 +46,7 @@ class App:
     def __init__(self, gui, game_map):
         self.gui = gui
         self.game_map = game_map
-        self._close = None
+        self._close_future = asyncio.Future()
 
     @classmethod
     async def create(cls, settings=None):
@@ -54,9 +54,12 @@ class App:
 
         :returns: App
         """
+        from gui.curses import Curses
         game_map = GameMap()
         baba = Baba()
+        flag = Flag()
         game_map.maps[1][1] = baba
+        game_map.maps[3][3] = flag
         gui = Curses(game_map)
         app = cls(gui, game_map)
         gui.register_actions(app.quit,
@@ -66,53 +69,60 @@ class App:
                              app.move_right)
         return app
 
+    def do_move(self, move):
+        """ apply move and rules """
+        is_win = False
+        flags = self.game_map.get_entities(Flag)
+        for you, src, dst in move:
+            s_x, s_y = src
+            d_x, d_y = dst
+            if any([d_x == x and d_y == y for _, x, y in flags]):
+                is_win = True
+                continue
+            self.game_map.maps[s_x][s_y] = None
+            self.game_map.maps[d_x][d_y] = you
+        if is_win:
+            logger.info("You win !")
+            self.quit()
+
     def quit(self):
-        """ User hit the 'quit' """
+        """ Quit the game """
         logger.debug("quit")
         self.close()
 
     def move_up(self):
         """ The user want to move """
         logger.debug("move_up")
-        for baba, x, y in self.game_map.babas:
-            self.game_map.maps[x][(y-1) % self.game_map.height] = baba
-            self.game_map.maps[x][y] = None
-        self.game_map.debug()
+        self.do_move([(baba, (x, y), (x, (y-1) % self.game_map.height))
+                      for baba, x, y in self.game_map.get_entities(Baba)])
 
     def move_down(self):
         """ The user want to move """
         logger.debug("move_down")
-        for baba, x, y in self.game_map.babas:
-            self.game_map.maps[x][(y+1) % self.game_map.height] = baba
-            self.game_map.maps[x][y] = None
-        self.game_map.debug()
+        self.do_move([(baba, (x, y), (x, (y+1) % self.game_map.height))
+                      for baba, x, y in self.game_map.get_entities(Baba)])
 
     def move_left(self):
         """ The user want to move """
         logger.debug("move_left")
-        for baba, x, y in self.game_map.babas:
-            self.game_map.maps[(x-1) % self.game_map.width][y] = baba
-            self.game_map.maps[x][y] = None
-        self.game_map.debug()
+        self.do_move([(baba, (x, y), ((x-1) % self.game_map.width, y))
+                      for baba, x, y in self.game_map.get_entities(Baba)])
 
     def move_right(self):
         """ The user want to move """
         logger.debug("move_right")
-        for baba, x, y in self.game_map.babas:
-            self.game_map.maps[(x+1) % self.game_map.width][y] = baba
-            self.game_map.maps[x][y] = None
-        self.game_map.debug()
+        self.do_move([(baba, (x, y), ((x+1) % self.game_map.width, y))
+                      for baba, x, y in self.game_map.get_entities(Baba)])
 
-    def start(self):
+    async def start(self):
         """ Start the App """
-        self._close = asyncio.Future()
-        self.gui.start()
+        await self.gui.start()
 
     def close(self):
         """ Clean app """
         self.gui.close()
-        if self._close:
-            self._close.set_result(None)
+        self._close_future.set_result(None)
 
     async def wait_closed(self):
-        await self._close
+        await self.gui.wait_closed()
+        await self._close_future
