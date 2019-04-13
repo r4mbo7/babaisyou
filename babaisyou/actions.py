@@ -3,6 +3,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def sign(a): return (a > 0) - (a < 0)
+
+
 class Action:
     """ Manage collisition between items """
     registry = {}
@@ -25,7 +28,15 @@ class Action:
         :returns: collision make the party win
         """
         # default action : do nothing
+        logger.debug("Apply Action")
+        diffx = item_dst.posx - item_src.posx
+        diffy = item_dst.posy - item_src.posy
+        item_src.posx += sign(diffx)
+        item_src.posy += sign(diffy)
         return False
+
+
+Action.register(Action)
 
 
 @Action.register
@@ -71,7 +82,6 @@ class PushSameAsYou(Action):
 
     def apply(self, item_src, item_dst):
         logger.debug(f"Apply {self.__class__} : {item_src.__class__}({item_src.rule})→{item_dst.__class__}({item_dst.rule})")
-        sign = lambda a: (a>0) - (a<0)
         diffx = item_dst.posx - item_src.posx
         diffy = item_dst.posy - item_src.posy
         if item_src.you and item_dst.you:
@@ -122,6 +132,7 @@ class PushSameAsYou(Action):
                 if h > 1:
                     item_src.posy = nex
         return False
+
 
 @Action.register
 class Win(Action):
