@@ -66,6 +66,6 @@ class GameMap:
         """ List of items on map """
         cls = cls or Item
         return [item
-                for x, col in enumerate(self.maps)
-                for y, item in enumerate(col)
+                for col in self.maps
+                for item in col
                 if isinstance(item, cls)]

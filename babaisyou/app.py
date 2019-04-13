@@ -73,7 +73,7 @@ class App:
                 you.posx = d_x
                 you.posy = d_y
             else:
-                logger.debug(f"collisition with {item.__class__}")
+                logger.debug(f"{item.__class__} collisition with {item.__class__}")
                 is_win |= any([action(self.game_map).apply(you, item)
                                for action in item.actions])
         self.game_map.set_items(self.items)
