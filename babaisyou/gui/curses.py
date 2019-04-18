@@ -35,6 +35,10 @@ items_repr = {
         "letter": "P",
         "color": "blue"
     },
+    Stop: {
+        "letter": "S",
+        "color": "blue"
+    },
     Win: {
         "letter": "W",
         "color": "yellow"
