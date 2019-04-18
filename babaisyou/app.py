@@ -13,6 +13,7 @@ class App:
     def __init__(self, map_name="maps/default.txt"):
         self.map_name = map_name
         self.game_map = GameMap.create(map_name)
+        self.items = self.game_map.get_items()
         self.read_rules()
         self.gui = Curses(self)
         self.gui.register_actions(self.quit,
@@ -23,10 +24,6 @@ class App:
                                   self.retry)
         self._close_future = asyncio.Future()
 
-    @property
-    def items(self):
-        return self.game_map.get_items()
-
     @staticmethod
     def are_rules(item1, item2):
         if item1 is None or item2 is None:
@@ -34,6 +31,7 @@ class App:
         return item1.rule and item2.rule
 
     def read_rules(self):
+        """ parse map and set active rules to items """
         rules = []
         for rule in self.game_map.get_items(Is):
             adjacent = [((rule.posx-1) % self.game_map.width, rule.posy,
@@ -46,7 +44,7 @@ class App:
                 if self.are_rules(item1, item2):
                     rules.append((item1, item2))
         logger.debug(f"rules {[(r1.__class__.__name__, 'is', r2.__class__.__name__) for r1, r2 in rules]}")
-        # set rules
+        # update items with set rules
         new_items = []
         for item in self.items:
             if item.rule:
@@ -59,23 +57,28 @@ class App:
                     if isinstance(item, r1.__class__):
                         item_rules.append(r2)
                 new_items.append(item.set_rules(item_rules, self.game_map))
+        self.items = new_items
+        self.game_map.set_items(self.items)
 
-        self.game_map.set_items(new_items)
-
-    def do_move(self, move):
+    def do_move(self):
         """ apply move and rules """
         is_win = False
-        for you, d_x, d_y in move:
+        # compute move
+        for you in [item for item in self.items if item.you]:
+            d_x = (you.posx+you.vectx) % self.game_map.width
+            d_y = (you.posy+you.vecty) % self.game_map.height
             item = self.game_map.maps[d_x][d_y]
-            if item is None:
-                # simple move
-                logger.debug("move")
-                you.posx = d_x
-                you.posy = d_y
-            else:
-                logger.debug(f"{item.__class__} collisition with {item.__class__}")
+            if item is not None:
                 is_win |= any([action(self.game_map).apply(you, item)
                                for action in item.actions])
+        # apply move
+        def move_item(item):
+            item.posx = (item.posx+item.vectx) % self.game_map.width
+            item.posy = (item.posy+item.vecty) % self.game_map.height
+            item.vectx = 0
+            item.vecty = 0
+            return item
+        self.items = list(map(move_item, self.items))
         self.game_map.set_items(self.items)
         if is_win:
             logger.info("You win !")
@@ -98,30 +101,34 @@ class App:
     def move_up(self):
         """ The user want to move """
         logger.debug("move_up")
-        self.do_move([(item, item.posx, (item.posy-1) % self.game_map.height)
-                      for item in self.game_map.get_items(Item)
-                      if item.you])
+        for item in self.items:
+            if item.you:
+                item.vecty = -1
+        self.do_move()
 
     def move_down(self):
         """ The user want to move """
         logger.debug("move_down")
-        self.do_move([(item, item.posx, (item.posy+1) % self.game_map.height)
-                      for item in self.game_map.get_items(Item)
-                      if item.you])
+        for item in self.items:
+            if item.you:
+                item.vecty = +1
+        self.do_move()
 
     def move_left(self):
         """ The user want to move """
         logger.debug("move_left")
-        self.do_move([(item, (item.posx-1) % self.game_map.width, item.posy)
-                      for item in self.game_map.get_items(Item)
-                      if item.you])
+        for item in self.items:
+            if item.you:
+                item.vectx = -1
+        self.do_move()
 
     def move_right(self):
         """ The user want to move """
         logger.debug("move_right")
-        self.do_move([(item, (item.posx+1) % self.game_map.width, item.posy)
-                      for item in self.game_map.get_items(Item)
-                      if item.you])
+        for item in self.items:
+            if item.you:
+                item.vectx = 1
+        self.do_move()
 
     async def start(self):
         """ Start the App """
