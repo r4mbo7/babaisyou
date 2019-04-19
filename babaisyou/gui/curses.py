@@ -31,6 +31,10 @@ items_repr = {
         "letter": "I",
         "color": "red"
     },
+    Dead: {
+        "letter": "D",
+        "color": "red"
+    },
     Push: {
         "letter": "P",
         "color": "blue"

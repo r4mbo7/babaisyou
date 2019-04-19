@@ -12,6 +12,7 @@ dipacth = {
     "x": lambda x, y: Win(x, y),
     "p": lambda x, y: Push(x, y),
     "s": lambda x, y: Stop(x, y, rule=True),
+    "d": lambda x, y: Dead(x, y, rule=True),
     "b": lambda x, y: Baba(x, y, rule=True),
     "B": lambda x, y: Baba(x, y, you=True),
     "w": lambda x, y: Wall(x, y, rule=True),

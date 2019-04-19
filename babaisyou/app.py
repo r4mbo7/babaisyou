@@ -69,19 +69,25 @@ class App:
             d_y = (you.posy+you.vecty) % self.game_map.height
             item = self.game_map.maps[d_x][d_y]
             if item is not None:
-                is_win |= any([action(self.game_map).apply(you, item)
-                               for action in item.actions])
+                for action in item.actions:
+                    action(self.game_map).apply(you, item)
+
         # apply move
         def move_item(item):
+            if item.dead:
+                return None
             item.posx = (item.posx+item.vectx) % self.game_map.width
             item.posy = (item.posy+item.vecty) % self.game_map.height
             item.vectx = 0
             item.vecty = 0
             return item
-        self.items = list(map(move_item, self.items))
+        self.items = list(filter(None, map(move_item, self.items)))
         self.game_map.set_items(self.items)
-        if is_win:
+        if any([item.win for item in self.items]):
             logger.info("You win !")
+            self.quit()
+        elif all([not item.you for item in self.items]):
+            logger.info("You loose !")
             self.quit()
         else:
             # re-set rules

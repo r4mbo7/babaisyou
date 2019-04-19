@@ -17,6 +17,8 @@ class Item:
         if self.rule:
             self.actions = [Action.load("Push")]
         self.you = you  # item is you
+        self.win = False  # party is win
+        self.dead = False  # item is dead
 
     def set_rules(self, rules, game_map):
         # reset actions
@@ -103,4 +105,13 @@ class Stop(Rule):
             actions.remove(Action.load("Push"))
         else:
             actions.add(Action.load("Stop"))
+        return actions
+
+
+class Dead(Rule):
+    def __init__(self, *agrs, **kwargs):
+        super().__init__(*agrs, **kwargs)
+
+    def set_actions(self, actions):
+        actions.add(Action.load("Dead"))
         return actions
