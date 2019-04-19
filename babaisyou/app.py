@@ -1,8 +1,8 @@
 import asyncio
 import logging
-from gui.curses import Curses
-from items import *
-from maps import GameMap
+from babaisyou.gui.curses import Curses
+from babaisyou.items import *
+from babaisyou.maps import GameMap
 
 logger = logging.getLogger(__name__)
 
@@ -10,19 +10,22 @@ logger = logging.getLogger(__name__)
 class App:
     """ App contain rules and handle GUI """
 
-    def __init__(self, map_name="maps/default.txt"):
+    def __init__(self, map_name, game_map, items, gui):
         self.map_name = map_name
-        self.game_map = GameMap.create(map_name)
-        self.items = self.game_map.get_items()
+        self.game_map = game_map
+        self.items = items
+        self.gui = gui
         self.read_rules()
-        self.gui = Curses(self)
-        self.gui.register_actions(self.quit,
-                                  self.move_up,
-                                  self.move_down,
-                                  self.move_left,
-                                  self.move_right,
-                                  self.retry)
         self._close_future = asyncio.Future()
+
+    @classmethod
+    async def create(cls, map_name="maps/default.txt"):
+        game_map = GameMap.create(map_name)
+        items = game_map.get_items()
+        gui = Curses()
+        app = cls(map_name, game_map, items, gui)
+        gui.set_app(app) 
+        return app
 
     @staticmethod
     def are_rules(item1, item2):
@@ -45,10 +48,9 @@ class App:
                     rules.append((item1, item2))
         logger.debug(f"rules {[(r1.__class__.__name__, 'is', r2.__class__.__name__) for r1, r2 in rules]}")
         # update items with set rules
-        new_items = []
         for item in self.items:
             if item.rule:
-                new_items.append(item)
+                pass
             else:
                 item_rules = []
                 for r1, r2 in rules:
@@ -56,21 +58,20 @@ class App:
                         item_rules.append(r1)
                     if isinstance(item, r1.__class__):
                         item_rules.append(r2)
-                new_items.append(item.set_rules(item_rules, self.game_map))
-        self.items = new_items
+                item.set_rules(item_rules, self.game_map)
+
         self.game_map.set_items(self.items)
 
-    def do_move(self):
+    async def do_move(self):
         """ apply move and rules """
-        is_win = False
         # compute move
-        for you in [item for item in self.items if item.you]:
-            d_x = (you.posx+you.vectx) % self.game_map.width
-            d_y = (you.posy+you.vecty) % self.game_map.height
+        for moving in [item for item in self.items if item.vectx != 0 or item.vecty != 0]:
+            d_x = (moving.posx+moving.vectx) % self.game_map.width
+            d_y = (moving.posy+moving.vecty) % self.game_map.height
             item = self.game_map.maps[d_x][d_y]
             if item is not None:
                 for action in item.actions:
-                    action(self.game_map).apply(you, item)
+                    action(self.game_map).apply(moving, item)
 
         # apply move
         def move_item(item):
@@ -85,56 +86,52 @@ class App:
         self.game_map.set_items(self.items)
         if any([item.win for item in self.items]):
             logger.info("You win !")
-            self.quit()
+            await self.quit()
         elif all([not item.you for item in self.items]):
             logger.info("You loose !")
-            self.quit()
+            await self.quit()
         else:
             # re-set rules
             self.read_rules()
 
-    def quit(self):
+    async def quit(self, info="quit"):
         """ Quit the game """
         logger.info("quit")
         self.close()
 
-    def retry(self):
+    async def retry(self):
         """ The user want to retry """
         logger.info("retry")
         self.game_map = GameMap.create(self.map_name)
         self.read_rules()
 
-    def move_up(self):
+    async def move_up(self, fn=lambda x: x.you):
         """ The user want to move """
         logger.debug("move_up")
-        for item in self.items:
-            if item.you:
-                item.vecty = -1
-        self.do_move()
+        for item in filter(fn, self.items):
+            item.vecty = -1
+        await self.do_move()
 
-    def move_down(self):
+    async def move_down(self, fn=lambda x: x.you):
         """ The user want to move """
         logger.debug("move_down")
-        for item in self.items:
-            if item.you:
-                item.vecty = +1
-        self.do_move()
+        for item in filter(fn, self.items):
+            item.vecty = +1
+        await self.do_move()
 
-    def move_left(self):
+    async def move_left(self, fn=lambda x: x.you):
         """ The user want to move """
         logger.debug("move_left")
-        for item in self.items:
-            if item.you:
-                item.vectx = -1
-        self.do_move()
+        for item in filter(fn, self.items):
+            item.vectx = -1
+        await self.do_move()
 
-    def move_right(self):
+    async def move_right(self, fn=lambda x: x.you):
         """ The user want to move """
         logger.debug("move_right")
-        for item in self.items:
-            if item.you:
-                item.vectx = 1
-        self.do_move()
+        for item in filter(fn, self.items):
+            item.vectx = 1
+        await self.do_move()
 
     async def start(self):
         """ Start the App """
@@ -143,8 +140,9 @@ class App:
     def close(self):
         """ Clean app """
         self.gui.close()
-        self._close_future.set_result(None)
+        if not self._close_future.done():
+            self._close_future.set_result(None)
 
     async def wait_closed(self):
-        await self.gui.wait_closed()
         await self._close_future
+        await self.gui.wait_closed()
