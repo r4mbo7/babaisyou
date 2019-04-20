@@ -172,6 +172,7 @@ class Client(object):
                     await move(lambda item: item.p1)
                 else:
                     await move(lambda item: item.p2)
+        self.app.gui.update()
 
     def close(self):
         if not self._close_future.done():
