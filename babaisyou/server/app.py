@@ -121,7 +121,9 @@ class Client(object):
     async def start(self):
         await self.pub.publish_json(SERVER_CHANNEL, {"hello": self.client_id})
         await self._client_id_future
-        Player.is_you = lambda item: self.client_id == item.player_id
+        # update players is_you fct
+        for player in [item for item in self.app.items if isinstance(item, Player)]:
+            player.set_is_you(lambda player_id: self.client_id == player_id)
         self.app.read_rules()
         await self.app.start()
 

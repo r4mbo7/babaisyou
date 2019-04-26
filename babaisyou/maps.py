@@ -56,6 +56,7 @@ class GameMap:
                     else:# item is player
                         item = Player(wid, height, rule=True)
                         item.set_player_id(int(char))
+                        items.append(item)
                 wid += 1
         game_map = cls(width, height)
         game_map.set_items(items)

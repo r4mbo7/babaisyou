@@ -26,7 +26,6 @@ class Item:
             'Self is Item' with Item.rule True
         """
         # reset actions
-        logging.debug(f"set rules on {self.__class__.__name__}")
         self.actions = set([])
         self.you = False
         self.players = set([])
@@ -41,7 +40,9 @@ class Item:
             for item in game_map.get_items(Item):
                 if isinstance(item, rule.__class__):
                     self.players = self.players.union(item.players)
-        logging.debug(f"Rules for {self.__class__.__name__}(you={self.you}, players={self.players})\nActions={self.actions}")
+        logging.debug(f"Rules for {self.__class__.__name__}\n"
+                      f"\tyou={self.you}, players={self.players}\n"
+                      f"\tactions={self.actions}")
 
 
 class Baba(Item):
@@ -84,18 +85,20 @@ class You(Rule):
 
 class Player(Rule):
 
-    def set_player_id(self, player_id):
+    def set_player_id(self, player_id, is_you=lambda player_id: False):
+        """ Set a player id and function given self.you from player_id """
         self.player_id = player_id
-        # self.is_client = lambda : self.you = client_id == self.player_id
-        self.is_you = lambda item: False
-        logging.debug(f"Load Player{player_id}")
+        self.is_you = is_you
+
+    def set_is_you(self, is_you):
+        """ Update function given self.you bool from player_id """
+        self.is_you = is_you
 
     def apply_actions(self, item):
         logging.debug(f"{item.__class__.__name__} is p{self.player_id}")
         if not item.rule:
             item.players.add(self.player_id)
-        logging.debug(f"Is you is {self.is_you(self)}")
-        self.you = self.is_you(self)
+        item.you = self.is_you(self.player_id)
 
 
 class Win(Rule):
