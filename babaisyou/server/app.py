@@ -5,7 +5,7 @@ import logging
 import time
 from functools import partial
 from babaisyou.app import App
-from babaisyou.items import You, P1, P2
+from babaisyou.items import You, Player
 
 SERVER_CHANNEL = "server"
 CLIENT_CHANNEL = "client"
@@ -121,10 +121,7 @@ class Client(object):
     async def start(self):
         await self.pub.publish_json(SERVER_CHANNEL, {"hello": self.client_id})
         await self._client_id_future
-        if self.client_id == 1:
-            P1.apply_actions = You.apply_actions
-        else:
-            P2.apply_actions = You.apply_actions
+        Player.is_you = lambda item: self.client_id == item.player_id
         self.app.read_rules()
         await self.app.start()
 
@@ -168,10 +165,7 @@ class Client(object):
         for move, index in directions.items():
             if index == direction:
                 move = getattr(self.app, move)
-                if client_id == 1:
-                    await move(lambda item: item.p1)
-                else:
-                    await move(lambda item: item.p2)
+                await move(lambda item: client_id in item.players)
         self.app.gui.update()
 
     def close(self):

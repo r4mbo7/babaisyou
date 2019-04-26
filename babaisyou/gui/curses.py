@@ -66,14 +66,10 @@ items_repr = {
         "letter": "W",
         "color": "blue"
     },
-    P1: {
+    Player: {
         "color": "cyan",
-        "letter": "1"
+        "letter": "0"
     },
-    P2: {
-        "color": "maganta",
-        "letter": "2"
-    }
 }
 
 
@@ -174,10 +170,13 @@ class Curses(Gui):
                     self.win.addch(x+1, y+1, ' ')
                 else:
                     color = el_repr["color"]
+                    letter = el_repr["letter"]
                     if el.rule:
                         color += "2"
+                    if isinstance(el, Player):
+                        letter = str(el.player_id)
                     self.win.addstr(x+1, y+1,
-                                    el_repr["letter"],
+                                    letter,
                                     self.color[color])
 
     def register_actions(self, quit, up, down, left, right, retry):

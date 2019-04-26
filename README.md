@@ -14,7 +14,7 @@ py babaisyou/ -m maps/3.txt
 
 **Watch logs while playing**
 ```
-watch -n 1 tail app.log
+watch -n 1 tail -n 25 app.log
 ```
 
 **Prefixes to start a commit message**

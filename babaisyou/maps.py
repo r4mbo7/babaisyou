@@ -8,8 +8,6 @@ logger = logging.getLogger(__name__)
 
 dipacth = {
     "y": lambda x, y: You(x, y, rule=True),
-    "1": lambda x, y: P1(x, y, rule=True),
-    "2": lambda x, y: P2(x, y, rule=True),
     "i": lambda x, y: Is(x, y, rule=True),
     "x": lambda x, y: Win(x, y, rule=True),
     "p": lambda x, y: Push(x, y, rule=True),
@@ -52,7 +50,12 @@ class GameMap:
                 elif char == " ":
                     pass
                 else:
-                    items.append(dipacth[char](wid, height))
+                    item = dipacth.get(char)
+                    if item is not None:
+                        items.append(item(wid, height))
+                    else:# item is player
+                        item = Player(wid, height, rule=True)
+                        item.set_player_id(int(char))
                 wid += 1
         game_map = cls(width, height)
         game_map.set_items(items)

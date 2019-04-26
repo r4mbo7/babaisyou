@@ -17,8 +17,7 @@ class Item:
         if self.rule:
             self.actions = [Action.load("Push")]
         self.you = you  # item is you
-        self.p1 = False  # item is p1
-        self.p2 = False  # item is p2
+        self.players = set([])  # players ids owning the object
         self.win = False  # party is win
         self.dead = False  # item is dead
 
@@ -30,21 +29,19 @@ class Item:
         logging.debug(f"set rules on {self.__class__.__name__}")
         self.actions = set([])
         self.you = False
-        for item in rules:
-            logging.debug(f"{item.__class__.__name__}")
-            apply_actions = getattr(item, "apply_actions", lambda item: None)
+        self.players = set([])
+        for rule in rules:
+            logging.debug(f"{rule.__class__.__name__}")
+            apply_actions = getattr(rule, "apply_actions", lambda rule: None)
             apply_actions(self)
-            # item is item
-            self.you |= any([isinstance(you, item.__class__)
+            # rule is rule
+            self.you |= any([isinstance(you, rule.__class__)
                              for you in game_map.get_items(Item)
                              if you.you])
-            self.p1 |= any([isinstance(p1, item.__class__)
-                             for p1 in game_map.get_items(Item)
-                             if p1.p1])
-            self.p2 |= any([isinstance(p2, item.__class__)
-                             for p2 in game_map.get_items(Item)
-                             if p2.p2])
-        logging.debug(f"rules for {self.__class__.__name__}(you={self.you}) : {self.actions}")
+            for item in game_map.get_items(Item):
+                if isinstance(item, rule.__class__):
+                    self.players = self.players.union(item.players)
+        logging.debug(f"Rules for {self.__class__.__name__}(you={self.you}, players={self.players})\nActions={self.actions}")
 
 
 class Baba(Item):
@@ -85,20 +82,20 @@ class You(Rule):
             item.you = True
 
 
-class P1(Rule):
+class Player(Rule):
+
+    def set_player_id(self, player_id):
+        self.player_id = player_id
+        # self.is_client = lambda : self.you = client_id == self.player_id
+        self.is_you = lambda item: False
+        logging.debug(f"Load Player{player_id}")
 
     def apply_actions(self, item):
-        logging.debug(f"{item.__class__.__name__} is p1")
+        logging.debug(f"{item.__class__.__name__} is p{self.player_id}")
         if not item.rule:
-            item.p1 = True
-
-
-class P2(Rule):
-
-    def apply_actions(self, item):
-        logging.debug(f"{item.__class__.__name__} is p2")
-        if not item.rule:
-            item.p2 = True
+            item.players.add(self.player_id)
+        logging.debug(f"Is you is {self.is_you(self)}")
+        self.you = self.is_you(self)
 
 
 class Win(Rule):
