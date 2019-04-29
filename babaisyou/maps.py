@@ -1,23 +1,25 @@
 import asyncio
 import logging
-from gui.curses import Curses
-from items import *
+from babaisyou.gui.curses import Curses
+from babaisyou.items import *
 
 logger = logging.getLogger(__name__)
 
 
 dipacth = {
-    "y": lambda x, y: You(x, y),
+    "y": lambda x, y: You(x, y, rule=True),
     "i": lambda x, y: Is(x, y, rule=True),
-    "x": lambda x, y: Win(x, y),
-    "p": lambda x, y: Push(x, y),
+    "x": lambda x, y: Win(x, y, rule=True),
+    "p": lambda x, y: Push(x, y, rule=True),
     "s": lambda x, y: Stop(x, y, rule=True),
     "d": lambda x, y: Dead(x, y, rule=True),
-    "b": lambda x, y: Baba(x, y, rule=True),
-    "B": lambda x, y: Baba(x, y, you=True),
     "w": lambda x, y: Wall(x, y, rule=True),
-    "W": lambda x, y: Wall(x, y),
+    "b": lambda x, y: Baba(x, y, rule=True),
+    "c": lambda x, y: Cucu(x, y, rule=True),
     "f": lambda x, y: Flag(x, y, rule=True),
+    "B": lambda x, y: Baba(x, y),
+    "C": lambda x, y: Cucu(x, y),
+    "W": lambda x, y: Wall(x, y),
     "F": lambda x, y: Flag(x, y),
 }
 
@@ -48,7 +50,13 @@ class GameMap:
                 elif char == " ":
                     pass
                 else:
-                    items.append(dipacth[char](wid, height))
+                    item = dipacth.get(char)
+                    if item is not None:
+                        items.append(item(wid, height))
+                    else:# item is player
+                        item = Player(wid, height, rule=True)
+                        item.set_player_id(int(char))
+                        items.append(item)
                 wid += 1
         game_map = cls(width, height)
         game_map.set_items(items)

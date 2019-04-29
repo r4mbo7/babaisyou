@@ -1,8 +1,8 @@
-from . import Gui
+import asyncio
 import curses
 from curses import KEY_RIGHT, KEY_LEFT, KEY_UP, KEY_DOWN
-import asyncio
-from items import *
+from babaisyou.items import *
+from . import Gui
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,9 +18,12 @@ colors = {
     "green2": (7, curses.COLOR_GREEN, curses.COLOR_WHITE),
     "yellow": (8, curses.COLOR_YELLOW, curses.COLOR_BLACK),
     "yellow2": (9, curses.COLOR_YELLOW, curses.COLOR_WHITE),
-    "pink": (10, curses.COLOR_RED, curses.COLOR_BLACK),
-    "pink2": (11, curses.COLOR_RED, curses.COLOR_WHITE),
+    "cyan": (10, curses.COLOR_CYAN, curses.COLOR_BLACK),
+    "cyan2": (11, curses.COLOR_CYAN, curses.COLOR_WHITE),
+    "maganta": (12, curses.COLOR_MAGENTA, curses.COLOR_BLACK),
+    "maganta2": (13, curses.COLOR_MAGENTA, curses.COLOR_WHITE),
 }
+
 
 items_repr = {
     You: {
@@ -49,7 +52,11 @@ items_repr = {
     },
     Baba: {
         "letter": "B",
-        "color": "pink"
+        "color": "white"
+    },
+    Cucu: {
+        "letter": "C",
+        "color": "maganta"
     },
     Flag: {
         "letter": "F",
@@ -58,23 +65,34 @@ items_repr = {
     Wall: {
         "letter": "W",
         "color": "blue"
-    }
+    },
+    Player: {
+        "color": "cyan",
+        "letter": "0"
+    },
 }
 
 
 class Curses(Gui):
     """TerminalGui is a Gui """
 
-    def __init__(self, app):
-        """ 
-        :param GameMap app: The actual GameMap instance to display
-        """
-        self._app = app
+    def __init__(self):
+        self._app = None
         self.color = {}
         self.actions = {}
         self.gui_loop = None
         self.loop = asyncio.get_event_loop()
         self.over = False
+
+    def set_app(self, app):
+        """ Default app use """
+        self._app = app
+        self.register_actions(self._app.quit,
+                              self._app.move_up,
+                              self._app.move_down,
+                              self._app.move_left,
+                              self._app.move_right,
+                              self._app.retry)
 
     @property
     def game_map(self):
@@ -99,38 +117,31 @@ class Curses(Gui):
     async def start(self):
         """ Start GUI and event loop """
         self._curses_init()
-        self.gui_loop = asyncio.ensure_future(
-            self.loop.run_in_executor(None,
-                                      lambda: curses.wrapper(self._event_loop))
-        )
+        self.gui_loop = asyncio.ensure_future(self.worker())
 
-    def _event_loop(self, stdscr):
+    async def worker(self):
         """ Gui event loop """
-        self.moves = curses.newwin(10, 30, 0, 0)
-        self.moves.addstr(0, 1, " ← ↑ ↓ → r esc ")
-        self.moves.refresh()
-        self.winrules = curses.newwin(10, 30, 1, 1+self.game_map.width+1)
-        self.winrules.addstr(1, 0, "Good luck :)")
-        line = 1
-        for item, rep in items_repr.items():
-            line += 1
-            self.winrules.addstr(line % 10, 1,
-                                 f"{rep['letter']} : {item.__name__}",
-                                 self.color[rep["color"]+"2"])
-        self.winrules.refresh()
+        self.header = curses.newwin(10, 30, 0, 0)
+        self.update_header()
+        self.header.refresh()
 
-        self.win = curses.newwin(1+self.game_map.height+1,
+        self.side = curses.newwin(20, 30, 0, 1+self.game_map.width+1)
+        self.update_rules()
+        self.side.refresh()
+
+        self.body = curses.newwin(1+self.game_map.height+1,
                                  1+self.game_map.width+1,
                                  1, 0)
-        self.win.keypad(1)
-        self.win.border(0)
-        self.win.nodelay(1)
+        self.body.keypad(1)
+        self.body.border(0)
+        self.body.nodelay(1)
         self.update()
         while not self.over:
-            self.win.border(0)
-            self.win.timeout(1)
+            await asyncio.sleep(0)
+            self.body.border(0)
+            self.body.timeout(1)
 
-            event = self.win.getch()
+            event = self.body.getch()
             if event == -1:
                 continue
             key = event
@@ -141,8 +152,28 @@ class Curses(Gui):
                 logger.info(f"no action for key : {key}")
                 continue
 
-            action()
+            await action()
             self.update()
+
+    def update_header(self):
+        self.header.addstr(0, 1, " ← ↑ ↓ → r esc ")
+
+
+    def update_rules(self):
+        player_id = None
+        for player in self.game_map.get_items(Player):
+            if player.is_you(player.player_id):
+                player_id = player.player_id
+        if player_id:
+            self.side.addstr(0, 0, f"You are player {player_id}",
+                                 self.color["cyan"])
+        self.side.addstr(1, 0, "Rules")
+        line = 1
+        for item, rep in items_repr.items():
+            line += 1
+            self.side.addstr(line % 20, 1,
+                                 f"{rep['letter']} : {item.__name__}",
+                                 self.color[rep["color"]+"2"])
 
     def update(self):
         """ Refresh screen """
@@ -151,14 +182,19 @@ class Curses(Gui):
                 try:
                     el_repr = items_repr[el.__class__]
                 except KeyError:
-                    self.win.addch(x+1, y+1, ' ')
+                    self.body.addch(x+1, y+1, ' ')
                 else:
                     color = el_repr["color"]
+                    letter = el_repr["letter"]
                     if el.rule:
                         color += "2"
-                    self.win.addstr(x+1, y+1,
-                                    el_repr["letter"],
+                    if isinstance(el, Player):
+                        letter = str(el.player_id)
+                    self.body.addstr(x+1, y+1,
+                                    letter,
                                     self.color[color])
+        self.update_header()
+        self.update_rules()
 
     def register_actions(self, quit, up, down, left, right, retry):
         """ Callback when user did an action """
@@ -176,14 +212,15 @@ class Curses(Gui):
         self.over = True
         if self.gui_loop is not None and not self.gui_loop.cancelled():
             self.gui_loop.cancel()
-        curses.echo()
-        curses.nocbreak()
-        curses.endwin()
+            curses.echo()
+            curses.nocbreak()
+            curses.endwin()
         logger.debug("Gui closed")
 
     async def wait_closed(self):
         """ Wait until gui loop is over """
         try:
-            await self.gui_loop
+            if self.gui_loop is not None:
+                await self.gui_loop
         except asyncio.CancelledError:
             pass
