@@ -17,6 +17,7 @@ class App:
         self.gui = gui
         self.read_rules()
         self._close_future = asyncio.Future()
+        self.party_win = None
 
     @classmethod
     async def create(cls, map_name="maps/default.txt"):
@@ -24,7 +25,7 @@ class App:
         items = game_map.get_items()
         gui = Curses()
         app = cls(map_name, game_map, items, gui)
-        gui.set_app(app) 
+        gui.set_app(app)
         return app
 
     @staticmethod
@@ -86,13 +87,21 @@ class App:
         self.game_map.set_items(self.items)
         if any([item.win for item in self.items]):
             logger.info("You win !")
-            await self.quit()
+            self.party_win = True
         elif all([not item.you for item in self.items]):
             logger.info("You loose !")
-            await self.quit()
+            self.party_win = False
         else:
             # re-set rules
             self.read_rules()
+        self.update_gui()
+
+    def update_gui(self):
+        if self.party_win is None:
+            self.gui.update()
+        else:
+            logger.info("You loose !")
+            self.gui.party_end(win=self.party_win)
 
     async def quit(self, info="quit"):
         """ Quit the game """
@@ -104,6 +113,7 @@ class App:
         logger.info("retry")
         self.game_map = GameMap.create(self.map_name)
         self.read_rules()
+        self.party_win = None
 
     async def move_up(self, fn=lambda x: x.you):
         """ The user want to move """

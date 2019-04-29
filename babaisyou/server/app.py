@@ -168,7 +168,6 @@ class Client(object):
             if index == direction:
                 move = getattr(self.app, move)
                 await move(lambda item: client_id in item.players)
-        self.app.gui.update()
 
     def close(self):
         if not self._close_future.done():

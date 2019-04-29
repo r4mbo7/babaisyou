@@ -196,6 +196,19 @@ class Curses(Gui):
         self.update_header()
         self.update_rules()
 
+
+    def party_end(self, win):
+        """ Party over
+        
+        :param bool win: user win or not
+        """
+        if win:
+            self.body.addstr(5, 5, "You win !", self.color["green"])
+        else:
+            self.body.addstr(5, 5, "You loose :(", self.color["red"])
+        self.body.refresh()
+
+
     def register_actions(self, quit, up, down, left, right, retry):
         """ Callback when user did an action """
         self.actions = {
