@@ -121,32 +121,27 @@ class Curses(Gui):
 
     async def worker(self):
         """ Gui event loop """
-        self.moves = curses.newwin(10, 30, 0, 0)
-        self.moves.addstr(0, 1, " ← ↑ ↓ → r esc ")
-        self.moves.refresh()
-        self.winrules = curses.newwin(20, 30, 1, 1+self.game_map.width+1)
-        self.winrules.addstr(1, 0, "Good luck :)")
-        line = 1
-        for item, rep in items_repr.items():
-            line += 1
-            self.winrules.addstr(line % 20, 1,
-                                 f"{rep['letter']} : {item.__name__}",
-                                 self.color[rep["color"]+"2"])
-        self.winrules.refresh()
+        self.header = curses.newwin(10, 30, 0, 0)
+        self.update_header()
+        self.header.refresh()
 
-        self.win = curses.newwin(1+self.game_map.height+1,
+        self.side = curses.newwin(20, 30, 0, 1+self.game_map.width+1)
+        self.update_rules()
+        self.side.refresh()
+
+        self.body = curses.newwin(1+self.game_map.height+1,
                                  1+self.game_map.width+1,
                                  1, 0)
-        self.win.keypad(1)
-        self.win.border(0)
-        self.win.nodelay(1)
+        self.body.keypad(1)
+        self.body.border(0)
+        self.body.nodelay(1)
         self.update()
         while not self.over:
             await asyncio.sleep(0)
-            self.win.border(0)
-            self.win.timeout(1)
+            self.body.border(0)
+            self.body.timeout(1)
 
-            event = self.win.getch()
+            event = self.body.getch()
             if event == -1:
                 continue
             key = event
@@ -160,6 +155,26 @@ class Curses(Gui):
             await action()
             self.update()
 
+    def update_header(self):
+        self.header.addstr(0, 1, " ← ↑ ↓ → r esc ")
+
+
+    def update_rules(self):
+        player_id = None
+        for player in self.game_map.get_items(Player):
+            if player.is_you(player.player_id):
+                player_id = player.player_id
+        if player_id:
+            self.side.addstr(0, 0, f"You are player {player_id}",
+                                 self.color["cyan"])
+        self.side.addstr(1, 0, "Rules")
+        line = 1
+        for item, rep in items_repr.items():
+            line += 1
+            self.side.addstr(line % 20, 1,
+                                 f"{rep['letter']} : {item.__name__}",
+                                 self.color[rep["color"]+"2"])
+
     def update(self):
         """ Refresh screen """
         for y, col in enumerate(self.game_map.maps):
@@ -167,7 +182,7 @@ class Curses(Gui):
                 try:
                     el_repr = items_repr[el.__class__]
                 except KeyError:
-                    self.win.addch(x+1, y+1, ' ')
+                    self.body.addch(x+1, y+1, ' ')
                 else:
                     color = el_repr["color"]
                     letter = el_repr["letter"]
@@ -175,9 +190,11 @@ class Curses(Gui):
                         color += "2"
                     if isinstance(el, Player):
                         letter = str(el.player_id)
-                    self.win.addstr(x+1, y+1,
+                    self.body.addstr(x+1, y+1,
                                     letter,
                                     self.color[color])
+        self.update_header()
+        self.update_rules()
 
     def register_actions(self, quit, up, down, left, right, retry):
         """ Callback when user did an action """
