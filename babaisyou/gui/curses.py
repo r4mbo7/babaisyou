@@ -1,9 +1,10 @@
 import asyncio
 import curses
 from curses import KEY_RIGHT, KEY_LEFT, KEY_UP, KEY_DOWN
+import logging
+
 from babaisyou.items import *
 from . import Gui
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -201,9 +202,9 @@ class Curses(Gui):
         :param bool win: user win or not
         """
         if win:
-            self.body.addstr(5, 5, "You win !", self.color["green"])
+            print("You win !")
         else:
-            self.body.addstr(5, 5, "You loose :(", self.color["red"])
+            print("You loose :(")
         self.body.refresh()
 
     def register_actions(self, quit, up, down, left, right, retry):

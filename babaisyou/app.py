@@ -84,6 +84,7 @@ class App:
             item.vectx = 0
             item.vecty = 0
             return item
+
         self.items = list(filter(None, map(move_item, self.items)))
         self.game_map.set_items(self.items)
         if any([item.win for item in self.items]):
@@ -98,11 +99,11 @@ class App:
         self.update_gui()
 
     def update_gui(self):
-        if self.party_win is None:
-            self.gui.update()
-        else:
-            logger.info("You loose !")
+        if self.party_win is not None:
+            logger.info("You is over !")
             self.gui.party_end(win=self.party_win)
+        else:
+            self.gui.update()
 
     async def quit(self, info="quit"):
         """ Quit the game """
