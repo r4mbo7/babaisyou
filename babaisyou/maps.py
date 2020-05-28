@@ -53,7 +53,7 @@ class GameMap:
                     item = dipacth.get(char)
                     if item is not None:
                         items.append(item(wid, height))
-                    else:# item is player
+                    else:  # item is player
                         item = Player(wid, height, rule=True)
                         item.set_player_id(int(char))
                         items.append(item)
