@@ -22,7 +22,7 @@ pip install -r requirements.txt
 python3 -m babaisyou
 ```
 
-![Screen shot][docs/screen1.png]
+![Screen shot 1](docs/screen1.png)
 
 ### Maps
 
@@ -57,7 +57,7 @@ player2
 python3 -m babaisyou -c -m maps/mp0.txt
 ```
 
-![Screen shot][docs/screen2.png]
+![Screen shot 2](docs/screen2.png)
 
 ## Dev
 
