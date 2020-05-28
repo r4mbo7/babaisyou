@@ -130,8 +130,8 @@ class Curses(Gui):
         self.side.refresh()
 
         self.body = curses.newwin(1+self.game_map.height+1,
-                                 1+self.game_map.width+1,
-                                 1, 0)
+                                  1+self.game_map.width+1,
+                                  1, 0)
         self.body.keypad(1)
         self.body.border(0)
         self.body.nodelay(1)
@@ -158,7 +158,6 @@ class Curses(Gui):
     def update_header(self):
         self.header.addstr(0, 1, " ← ↑ ↓ → r esc ")
 
-
     def update_rules(self):
         player_id = None
         for player in self.game_map.get_items(Player):
@@ -166,14 +165,14 @@ class Curses(Gui):
                 player_id = player.player_id
         if player_id:
             self.side.addstr(0, 0, f"You are player {player_id}",
-                                 self.color["cyan"])
+                             self.color["cyan"])
         self.side.addstr(1, 0, "Rules")
         line = 1
         for item, rep in items_repr.items():
             line += 1
             self.side.addstr(line % 20, 1,
-                                 f"{rep['letter']} : {item.__name__}",
-                                 self.color[rep["color"]+"2"])
+                             f"{rep['letter']} : {item.__name__}",
+                             self.color[rep["color"]+"2"])
 
     def update(self):
         """ Refresh screen """
@@ -191,15 +190,14 @@ class Curses(Gui):
                     if isinstance(el, Player):
                         letter = str(el.player_id)
                     self.body.addstr(x+1, y+1,
-                                    letter,
-                                    self.color[color])
+                                     letter,
+                                     self.color[color])
         self.update_header()
         self.update_rules()
 
-
     def party_end(self, win):
         """ Party over
-        
+
         :param bool win: user win or not
         """
         if win:
@@ -207,7 +205,6 @@ class Curses(Gui):
         else:
             self.body.addstr(5, 5, "You loose :(", self.color["red"])
         self.body.refresh()
-
 
     def register_actions(self, quit, up, down, left, right, retry):
         """ Callback when user did an action """

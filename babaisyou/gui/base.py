@@ -1,5 +1,6 @@
 from abc import ABC
 
+
 class Gui(ABC):
     """ Interfarce for Gui """
 

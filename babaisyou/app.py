@@ -47,7 +47,8 @@ class App:
                 item2 = self.game_map.maps[i2x][i2y]
                 if self.are_rules(item1, item2):
                     rules.append((item1, item2))
-        logger.debug(f"rules {[(r1.__class__.__name__, 'is', r2.__class__.__name__) for r1, r2 in rules]}")
+        logger.debug(
+            f"rules {[(r1.__class__.__name__, 'is', r2.__class__.__name__) for r1, r2 in rules]}")
         # update items with set rules
         for item in self.items:
             if item.rule:

@@ -36,7 +36,8 @@ Action.register(Action)
 class Stop(Action):
 
     def apply(self, you, item):
-        logger.debug(f"Apply {self.__class__} : {you.__class__}({you.rule})→{item.__class__}({item.rule})")
+        logger.debug(
+            f"Apply {self.__class__} : {you.__class__}({you.rule})→{item.__class__}({item.rule})")
         you.vectx = 0
         you.vecty = 0
 
@@ -45,7 +46,8 @@ class Stop(Action):
 class Push(Action):
 
     def apply(self, you, item):
-        logger.debug(f"Apply {self.__class__} : {you.__class__}({you.rule})→{item.__class__}({item.rule})")
+        logger.debug(
+            f"Apply {self.__class__} : {you.__class__}({you.rule})→{item.__class__}({item.rule})")
         # push all the line
         if item.posx == you.posx:
             for h in range(self.game_map.height):
@@ -67,7 +69,8 @@ class Push(Action):
 class Win(Action):
 
     def apply(self, you, item):
-        logger.debug(f"Apply {self.__class__} : {you.__class__}({you.rule})→{item.__class__}({item.rule})")
+        logger.debug(
+            f"Apply {self.__class__} : {you.__class__}({you.rule})→{item.__class__}({item.rule})")
         you.win = True
 
 
@@ -75,5 +78,6 @@ class Win(Action):
 class Dead(Action):
 
     def apply(self, you, item):
-        logger.debug(f"Apply {self.__class__} : {you.__class__}({you.rule})→{item.__class__}({item.rule})")
+        logger.debug(
+            f"Apply {self.__class__} : {you.__class__}({you.rule})→{item.__class__}({item.rule})")
         you.dead = True
